@@ -1,0 +1,27 @@
+{
+  "name": "hackthon-pproject",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shehancharith26/-hackathon-project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/shehancharith26/-hackathon-project/issues"
+  },
+  "homepage": "https://github.com/shehancharith26/-hackathon-project#readme",
+  "dependencies": {
+    "firebase": "^13.3.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.7"
+  }
+}
