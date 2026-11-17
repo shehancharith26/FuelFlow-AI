@@ -5,20 +5,26 @@ Intelligent Fuel Station Discovery, Queue Wait Prediction & Smart Pump Allocatio
 
 from pathlib import Path
 import sys
-from typing import List
+from typing import Any, Dict, List
 
 # Allow running both from repository root (`uvicorn backend.main:app`) and from `backend/` (`uvicorn main:app`)
 _ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(_ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(_ROOT_DIR))
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.data import (
     PROTOTYPE_DISCLAIMER,
     get_stations_state,
     update_stations_from_simulation,
+)
+from backend.database import (
+    get_recent_summaries,
+    init_db,
+    save_compare_summary,
+    save_simulation_summary,
 )
 from backend.schemas import (
     CompareRequest,
@@ -35,6 +41,9 @@ from backend.schemas import (
 from backend.services.predictor import predict_wait_time_service
 from backend.services.recommender import recommend_station_service
 from backend.services.simulator import compare_strategies_service, run_simulation_service
+
+# Initialize SQLite database on module load
+init_db()
 
 app = FastAPI(
     title="FuelFlow AI Backend API",
@@ -130,8 +139,8 @@ def post_recommend(payload: RecommendRequest) -> RecommendResponse:
 )
 def post_predict(payload: PredictRequest) -> PredictResponse:
     """
-    Predict waiting time at a specific station using the modular deterministic queue-workload
-    estimator (explicitly labeled as a deterministic non-ML estimator until a trained model is integrated).
+    Predict waiting time at a specific station using the trained RandomForestRegressor ML model
+    (trained on synthetic queue simulation data, with deterministic queue-workload fallback).
     """
     try:
         result = predict_wait_time_service(
@@ -160,7 +169,7 @@ def post_predict(payload: PredictRequest) -> PredictResponse:
 def post_simulate(payload: SimulateRequest) -> SimulateResponse:
     """
     Execute a reproducible discrete-event simulation across all 3 stations and 9 pumps.
-    Updates in-memory station queue metrics from the simulated run when `vehicle_count > 0`.
+    Updates in-memory station queue metrics and stores execution summary in SQLite database.
     """
     result = run_simulation_service(
         vehicle_count=payload.vehicle_count,
@@ -171,6 +180,16 @@ def post_simulate(payload: SimulateRequest) -> SimulateResponse:
     )
     if payload.vehicle_count > 0 and "station_metrics" in result.get("results", {}):
         update_stations_from_simulation(result["results"]["station_metrics"])
+
+    # Persist simulation run summary into SQLite database
+    try:
+        save_simulation_summary(result)
+    except Exception as exc:
+        # Gracefully log without breaking simulation response
+        import logging
+
+        logging.getLogger("fuelflow.main").error("Failed to save simulation to SQLite: %s", exc)
+
     return SimulateResponse(**result)
 
 
@@ -184,7 +203,7 @@ def post_compare(payload: CompareRequest) -> CompareResponse:
     """
     Run a paired discrete-event simulation comparing Strategy 1 (Fixed Compatible-Pump FCFS)
     against Strategy 2 (FuelFlow Smart Allocation) on the exact same seeded vehicle arrivals,
-    computing all percentage improvements dynamically.
+    computing all percentage improvements dynamically and storing summary in SQLite database.
     """
     result = compare_strategies_service(
         vehicle_count=payload.vehicle_count,
@@ -192,7 +211,29 @@ def post_compare(payload: CompareRequest) -> CompareResponse:
         scenario=payload.scenario,
         horizon_min=payload.horizon_min,
     )
+
+    # Persist comparison summary into SQLite database
+    try:
+        save_compare_summary(result)
+    except Exception as exc:
+        import logging
+
+        logging.getLogger("fuelflow.main").error("Failed to save comparison to SQLite: %s", exc)
+
     return CompareResponse(**result)
+
+
+@app.get(
+    "/simulations/history",
+    summary="Get Recent Simulation Summaries from SQLite Database",
+    tags=["Manager Portal & Simulation"],
+)
+def get_simulation_history(
+    limit: int = Query(default=20, ge=1, le=100),
+    run_type: str = Query(default=None, description="'simulate' or 'compare'"),
+) -> List[Dict[str, Any]]:
+    """Retrieve history of saved simulation and strategy comparison summaries from SQLite."""
+    return get_recent_summaries(limit=limit, run_type=run_type)
 
 
 if __name__ == "__main__":

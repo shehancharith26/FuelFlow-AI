@@ -1,6 +1,7 @@
 """
 FastAPI endpoint integration tests using Starlette/FastAPI TestClient.
-Verifies exact contract compatibility with the React frontend (frontend/src/services/api.js).
+Verifies exact contract compatibility with the React frontend (frontend/src/services/api.js)
+and validates ML model integration and SQLite simulation persistence.
 """
 
 import unittest
@@ -59,7 +60,7 @@ class TestFastAPIEndpoints(unittest.TestCase):
         ranked_ids = [s["id"] for s in data["ranked_stations"]]
         self.assertNotIn("C", ranked_ids)
 
-    def test_post_predict_deterministic_and_no_fuel_handling(self) -> None:
+    def test_post_predict_uses_trained_random_forest_model(self) -> None:
         res = self.client.post(
             "/predict",
             json={
@@ -76,10 +77,14 @@ class TestFastAPIEndpoints(unittest.TestCase):
         data = res.json()
         self.assertEqual(data["station_id"], "A")
         self.assertIsInstance(data["predicted_wait_min"], (int, float))
-        self.assertFalse(data["is_trained_ml_model"])
-        self.assertEqual(data["prediction_method"], "deterministic_queue_workload_estimator")
+        self.assertGreater(data["predicted_wait_min"], 0)
+        # Verify trained ML model integration
+        self.assertTrue(data["is_trained_ml_model"])
+        self.assertEqual(data["prediction_method"], "random_forest_regressor")
+        self.assertIn("RandomForest", data["model_version"])
         self.assertTrue(data["eligible"])
         self.assertIn(data["recommended_pump"], ["Pump 1", "Pump 2", "Pump 3"])
+        self.assertGreaterEqual(data["confidence_score"], 0.8)
 
         # Test no-fuel station (Station C for diesel)
         res_no_fuel = self.client.post(
@@ -94,8 +99,9 @@ class TestFastAPIEndpoints(unittest.TestCase):
         nf_data = res_no_fuel.json()
         self.assertFalse(nf_data["eligible"])
         self.assertIsNone(nf_data["recommended_pump"])
+        self.assertEqual(nf_data["predicted_wait_min"], 999.0)
 
-    def test_post_simulate_and_compare_endpoints(self) -> None:
+    def test_post_simulate_and_compare_endpoints_and_sqlite_persistence(self) -> None:
         sim_res = self.client.post(
             "/simulate",
             json={"vehicle_count": 200, "scenario": "normal", "seed": 42},
@@ -120,6 +126,21 @@ class TestFastAPIEndpoints(unittest.TestCase):
         self.assertEqual(len(cmp_data["station_breakdown"]), 3)
         self.assertEqual(len(cmp_data["timeline_chart"]), 6)
         self.assertEqual(len(cmp_data["pump_utilization_chart"]), 3)
+
+        # Verify SQLite persistence via history endpoint
+        hist_res = self.client.get("/simulations/history")
+        self.assertEqual(hist_res.status_code, 200)
+        hist_data = hist_res.json()
+        self.assertIsInstance(hist_data, list)
+        self.assertGreaterEqual(len(hist_data), 2)
+        # Check that both simulate and compare runs are recorded
+        run_types = [h["run_type"] for h in hist_data]
+        self.assertIn("simulate", run_types)
+        self.assertIn("compare", run_types)
+        # Verify simulated data disclaimer in database records
+        for h in hist_data:
+            self.assertTrue(h["is_simulated"])
+            self.assertIn("SIMULATED DATA", h["disclaimer"])
 
     def test_invalid_inputs_return_422(self) -> None:
         # Invalid fuel type

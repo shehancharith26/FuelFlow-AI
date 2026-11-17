@@ -609,9 +609,16 @@ export default function DriverPortal({ stations }) {
                 <div className="prediction-output-card">
                   <div className="output-header">
                     <span className="output-title">Model Response Result</span>
-                    <span className="output-source-pill">
-                      {predictionResult.isDemo ? 'PROTOTYPE SIMULATED' : 'LIVE API'}
-                    </span>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                      {predictionResult.is_trained_ml_model && (
+                        <span className="output-source-pill" style={{ background: 'rgba(6, 182, 212, 0.2)', color: '#38bdf8' }}>
+                          RandomForest ML
+                        </span>
+                      )}
+                      <span className="output-source-pill">
+                        {predictionResult.isDemo ? 'PROTOTYPE SIMULATED' : 'LIVE API'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="prediction-stat-grid">
@@ -624,10 +631,20 @@ export default function DriverPortal({ stations }) {
                       <span className="pred-value cyan">{Math.round((predictionResult.confidence_score || 0.95) * 100)}%</span>
                     </div>
                     <div className="pred-stat">
-                      <span className="pred-label">Target Station:</span>
-                      <span className="pred-value">Station {predictionResult.station_id}</span>
+                      <span className="pred-label">
+                        {predictionResult.recommended_pump ? 'Assigned Pump:' : 'Target Station:'}
+                      </span>
+                      <span className="pred-value">
+                        {predictionResult.recommended_pump || `Station ${predictionResult.station_id}`}
+                      </span>
                     </div>
                   </div>
+
+                  {predictionResult.status_note && (
+                    <div style={{ fontSize: '0.74rem', color: '#94a3b8', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '6px' }}>
+                      {predictionResult.status_note}
+                    </div>
+                  )}
 
                   {predictionResult.breakdown && (
                     <div className="pred-breakdown-details">
