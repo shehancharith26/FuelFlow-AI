@@ -4,3 +4,7 @@ node_modules/
 !.env.example
 .firebase/
 dist/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
