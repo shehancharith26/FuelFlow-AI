@@ -31,12 +31,31 @@ async function apiFetch(endpoint, options = {}) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+      try {
+        const errorJson = await response.json();
+        if (errorJson && errorJson.detail) {
+          errorMessage = typeof errorJson.detail === 'string'
+            ? errorJson.detail
+            : Array.isArray(errorJson.detail)
+            ? errorJson.detail.map(d => d.msg || d.message || JSON.stringify(d)).join('; ')
+            : JSON.stringify(errorJson.detail);
+        }
+      } catch {
+        // use default error message if response body is not JSON
+      }
+      return {
+        success: false,
+        status: response.status,
+        isDemo: false,
+        error: errorMessage
+      };
     }
 
     const data = await response.json();
     return {
       success: true,
+      status: response.status,
       isDemo: false,
       data
     };
@@ -44,6 +63,7 @@ async function apiFetch(endpoint, options = {}) {
     clearTimeout(timeoutId);
     return {
       success: false,
+      status: 0,
       isDemo: true,
       error: err.name === 'AbortError' ? 'Connection timed out' : err.message
     };
@@ -343,5 +363,117 @@ export async function compareStrategies({ vehicle_count = 200, seed = 42 }) {
       smart_wait: +(t.smart_wait * ratio).toFixed(1)
     })),
     pump_utilization_chart: STRATEGY_COMPARISON.pump_utilization_chart
+  };
+}
+
+/**
+ * POST /queue/join
+ * Register a driver vehicle into the prototype virtual queue.
+ * Performs real backend request; returns live queue position and ML predicted wait.
+ * Strict rule: Never fabricates demo data for queue registration.
+ */
+export async function joinVirtualQueue({
+  vehicle_number,
+  vehicle_type = 'car',
+  fuel_type = 'petrol_92',
+  fuel_quantity_litres = 20,
+  station_id = 'A'
+}) {
+  const payload = {
+    vehicle_number: (vehicle_number || '').trim().toUpperCase(),
+    vehicle_type,
+    fuel_type,
+    fuel_quantity_litres: Number(fuel_quantity_litres),
+    station_id
+  };
+
+  const res = await apiFetch('/queue/join', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+
+  if (res.success && res.data) {
+    return {
+      success: true,
+      ticket: res.data,
+      error: null
+    };
+  }
+
+  return {
+    success: false,
+    ticket: null,
+    status: res.status,
+    error: res.error || 'Failed to join virtual queue. Please ensure the backend server is reachable at http://localhost:8000.'
+  };
+}
+
+/**
+ * GET /queue/status/:lookup_key
+ * Retrieve an active ticket and updated queue position by Registration ID or Vehicle Plate.
+ */
+export async function getQueueStatus(lookupKey) {
+  if (!lookupKey || !lookupKey.trim()) {
+    return {
+      success: false,
+      ticket: null,
+      error: 'Registration ID or Vehicle Registration Number is required.'
+    };
+  }
+
+  const cleanKey = encodeURIComponent(lookupKey.trim().toUpperCase());
+  const res = await apiFetch(`/queue/status/${cleanKey}`);
+
+  if (res.success && res.data) {
+    return {
+      success: true,
+      ticket: res.data,
+      error: null
+    };
+  }
+
+  return {
+    success: false,
+    ticket: null,
+    status: res.status,
+    error: res.error || 'No active virtual queue ticket found for this vehicle or registration ID.'
+  };
+}
+
+/**
+ * GET /queue/registrations
+ * Retrieve list of registered virtual queue vehicles from backend SQLite database.
+ * Supports optional filters for station_id, status, fuel_type, and limit.
+ */
+export async function getQueueRegistrations({
+  station_id = null,
+  status = null,
+  fuel_type = null,
+  limit = 100
+} = {}) {
+  const queryParams = new URLSearchParams();
+  if (station_id && station_id !== 'ALL') queryParams.append('station_id', station_id);
+  if (status && status !== 'ALL') queryParams.append('status', status);
+  if (fuel_type && fuel_type !== 'ALL') queryParams.append('fuel_type', fuel_type);
+  if (limit) queryParams.append('limit', String(limit));
+
+  const queryStr = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const res = await apiFetch(`/queue/registrations${queryStr}`);
+
+  if (res.success && Array.isArray(res.data)) {
+    return {
+      success: true,
+      registrations: res.data,
+      isDemo: false,
+      error: null
+    };
+  }
+
+  return {
+    success: false,
+    registrations: [],
+    isDemo: res.isDemo,
+    status: res.status,
+    error: res.error || 'Failed to fetch virtual queue registrations from backend.'
   };
 }

@@ -1,20 +1,21 @@
-import { 
-  Fuel, 
-  Compass, 
-  LayoutDashboard, 
-  Wifi, 
-  WifiOff, 
-  RefreshCw, 
+import {
+  Fuel,
+  Compass,
+  LayoutDashboard,
+  Wifi,
+  WifiOff,
+  RefreshCw,
   AlertTriangle,
-  Layers
+  Layers,
+  Trophy
 } from 'lucide-react';
 
-export default function Header({ 
-  activeTab, 
-  setActiveTab, 
-  backendStatus, 
-  onRefreshHealth, 
-  isRefreshing 
+export default function Header({
+  activeTab,
+  setActiveTab,
+  backendStatus,
+  onRefreshHealth,
+  isRefreshing
 }) {
   return (
     <header className="header-container">
@@ -26,7 +27,7 @@ export default function Header({
             <span>PROTOTYPE — SIMULATED DATA</span>
           </div>
           <span className="disclaimer-text">
-            Kegalle prototype scenario. Fictional fuel availability & synthetic ML queue predictions. Not live GPS or certified refinery inventory.
+            Kegalle prototype scenario. Fictional fuel availability &amp; synthetic ML queue predictions. Not live GPS or certified refinery inventory.
           </span>
         </div>
         <div className="system-pill">
@@ -46,14 +47,26 @@ export default function Header({
             <div className="brand-title-row">
               <span className="brand-name">FuelFlow</span>
               <span className="brand-ai">AI</span>
-              <span className="prototype-pill">v1.0-PROTO</span>
             </div>
-            <p className="brand-tagline">Intelligent Fuel Station Discovery & Smart Pump Allocation</p>
+            <p className="brand-tagline">Intelligent Fuel Station Discovery &amp; Smart Pump Allocation</p>
           </div>
         </div>
 
-        {/* Portal Switcher Tabs */}
+        {/* Portal Switcher Tabs — 3 tabs */}
         <div className="tab-switcher" role="tablist">
+          <button
+            role="tab"
+            aria-selected={activeTab === 'showcase'}
+            className={`tab-btn ${activeTab === 'showcase' ? 'active' : ''}`}
+            onClick={() => setActiveTab('showcase')}
+          >
+            <Trophy size={17} />
+            <div className="tab-text-group">
+              <span className="tab-title">Project Showcase</span>
+              <span className="tab-sub">Portfolio &amp; Architecture</span>
+            </div>
+          </button>
+
           <button
             role="tab"
             aria-selected={activeTab === 'driver'}
@@ -63,7 +76,7 @@ export default function Header({
             <Compass size={17} />
             <div className="tab-text-group">
               <span className="tab-title">Driver Portal</span>
-              <span className="tab-sub">Discovery & Wait Times</span>
+              <span className="tab-sub">Discovery &amp; Wait Times</span>
             </div>
           </button>
 
@@ -76,14 +89,14 @@ export default function Header({
             <LayoutDashboard size={17} />
             <div className="tab-text-group">
               <span className="tab-title">Manager Portal</span>
-              <span className="tab-sub">Operations & Smart Allocation</span>
+              <span className="tab-sub">Operations &amp; Smart Allocation</span>
             </div>
           </button>
         </div>
 
         {/* System & Backend Status Controls */}
         <div className="status-controls">
-          <div 
+          <div
             className={`status-pill ${backendStatus.online ? 'online' : 'demo'}`}
             title={`Backend: ${backendStatus.url || 'http://localhost:8000'}`}
           >

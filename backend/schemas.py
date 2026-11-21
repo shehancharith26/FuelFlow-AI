@@ -3,13 +3,15 @@ Pydantic v2 request and response schemas for the FuelFlow AI backend.
 Matches the exact contracts expected by the React frontend (frontend/src/services/api.js).
 """
 
+import re
 from typing import Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 FuelType = Literal["petrol_92", "petrol_95", "diesel"]
 VehicleType = Literal["car", "motorcycle", "three_wheeler", "van", "lorry"]
 PumpStatus = Literal["active", "maintenance", "idle"]
 ScenarioType = Literal["normal", "peak"]
+QueueStatus = Literal["WAITING", "SERVING", "COMPLETED", "CANCELLED"]
 
 
 class CurrentVehicle(BaseModel):
@@ -286,3 +288,96 @@ class CompareResponse(BaseModel):
     timeline_chart: List[TimelinePoint]
     pump_utilization_chart: List[PumpUtilizationItem]
     allocation_log: List[AllocationLogEntry]
+
+
+# -----------------------------------------------------------------------------
+# Virtual Queue Schemas (v1.1 Portfolio Edition)
+# -----------------------------------------------------------------------------
+
+class QueueJoinRequest(BaseModel):
+    vehicle_number: str = Field(
+        ...,
+        min_length=3,
+        max_length=20,
+        description="Vehicle registration plate number (e.g. 'WP-CAB-4012')",
+        examples=["WP-CAB-4012"],
+    )
+    vehicle_type: VehicleType = Field(
+        default="car",
+        description="Vehicle category for service-time calibration",
+    )
+    fuel_type: FuelType = Field(
+        default="petrol_92",
+        description="Required fuel type",
+    )
+    fuel_quantity_litres: float = Field(
+        ...,
+        gt=0.0,
+        le=200.0,
+        description="Required fuel quantity in litres (0.1 to 200.0 L)",
+        examples=[30.0],
+    )
+    station_id: Literal["A", "B", "C"] = Field(
+        ...,
+        description="Target prototype station ID ('A', 'B', or 'C')",
+        examples=["A"],
+    )
+
+    @field_validator("vehicle_number")
+    @classmethod
+    def validate_vehicle_plate(cls, v: str) -> str:
+        clean = v.strip().upper()
+        if not re.match(r"^[A-Z0-9\-\s]{3,20}$", clean):
+            raise ValueError(
+                "Vehicle registration plate must contain only letters, numbers, hyphens, and spaces."
+            )
+        has_letter = any(c.isalpha() for c in clean)
+        has_digit = any(c.isdigit() for c in clean)
+        if not (has_letter and has_digit):
+            raise ValueError(
+                "Vehicle registration plate must contain both letters and digits (e.g. 'WP-CAB-4012')."
+            )
+        return clean
+
+
+class QueueJoinResponse(BaseModel):
+    registration_id: str
+    vehicle_number: str
+    vehicle_type: VehicleType
+    fuel_type: FuelType
+    fuel_quantity_litres: float
+    station_id: str
+    station_name: str
+    queue_position: int
+    estimated_wait_min: float
+    assigned_pump_id: Optional[int]
+    assigned_pump_name: Optional[str]
+    status: QueueStatus
+    created_at: str
+    updated_at: str
+    disclaimer: str
+
+
+class QueueStatusUpdateRequest(BaseModel):
+    status: QueueStatus = Field(
+        ...,
+        description="Target queue status. Strict transitions: WAITING -> SERVING, WAITING -> CANCELLED, SERVING -> COMPLETED.",
+    )
+
+
+class QueueRegistrationSchema(BaseModel):
+    id: int
+    registration_id: str
+    vehicle_number: str
+    vehicle_type: VehicleType
+    fuel_type: FuelType
+    fuel_quantity_litres: float
+    station_id: str
+    queue_position: int
+    estimated_wait_min: float
+    status: QueueStatus
+    assigned_pump_id: Optional[int]
+    created_at: str
+    updated_at: str
+    is_simulated: bool
+    disclaimer: str

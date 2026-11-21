@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DriverPortal from './components/DriverPortal';
 import ManagerPortal from './components/ManagerPortal';
+import ProjectShowcase from './components/ProjectShowcase';
 import { getHealth, getStations } from './services/api';
 import { INITIAL_STATIONS } from './data/demoData';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('driver'); // 'driver' | 'manager'
+  const [activeTab, setActiveTab] = useState('showcase'); // 'showcase' | 'driver' | 'manager'
   const [stations, setStations] = useState(INITIAL_STATIONS);
   const [backendStatus, setBackendStatus] = useState({
     online: false,
@@ -94,15 +95,12 @@ function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
-        {activeTab === 'driver' ? (
-          <DriverPortal
-            stations={stations}
-          />
+        {activeTab === 'showcase' ? (
+          <ProjectShowcase onNavigate={setActiveTab} stations={stations} />
+        ) : activeTab === 'driver' ? (
+          <DriverPortal stations={stations} />
         ) : (
-          <ManagerPortal
-            stations={stations}
-            onUpdateStations={setStations}
-          />
+          <ManagerPortal stations={stations} onUpdateStations={setStations} />
         )}
       </main>
 
@@ -113,20 +111,21 @@ function App() {
             <div className="footer-brand">
               <strong>FuelFlow AI</strong>
               <span className="footer-sep">•</span>
-              <span>Intelligent Fuel Station Discovery & Smart Pump Allocation</span>
+              <span>Intelligent Fuel Station Discovery &amp; Smart Pump Allocation</span>
             </div>
             <p className="footer-disclaimer">
-              Built for Hackathon Demonstration. Prototype scenario based on Kegalle transport corridor. All queues, pump allocations, and journey durations are simulated.
+              Simulation Prototype — BuildX 0.1 Hackathon 3rd Place. Fictional Kegalle corridor scenario.
+              All queues, pump allocations, ML predictions, and journey durations are simulated. Not live GPS or refinery data.
             </p>
           </div>
           <div className="footer-right">
             <div className="footer-badges">
               <span className="badge-tag">React 19</span>
-              <span className="badge-tag">Vite</span>
-              <span className="badge-tag">Recharts</span>
-              <span className="badge-tag">Lucide</span>
+              <span className="badge-tag">FastAPI</span>
+              <span className="badge-tag">scikit-learn</span>
+              <span className="badge-tag">SQLite</span>
             </div>
-            <span className="footer-copyright">© 2026 FuelFlow AI Team</span>
+            <span className="footer-copyright">© 2026 FuelFlow AI — Portfolio Edition</span>
           </div>
         </div>
       </footer>

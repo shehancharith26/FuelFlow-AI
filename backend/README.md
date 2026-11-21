@@ -44,19 +44,37 @@ From the repository root:
 .\.venv\Scripts\python.exe -m pip install -r backend/requirements.txt
 ```
 
-### 2. Start the FastAPI Server on Port 8000
+### 2. Configure Environment Variables (Security)
+
+Manager operational actions (such as advancing queue statuses or completing service) require authentication. The backend **fails closed** if no `MANAGER_API_KEY` is configured (returning HTTP 503).
+
+Set your secret key before starting the server:
+
+**PowerShell (Windows):**
+```powershell
+$env:MANAGER_API_KEY = "your-secure-local-manager-key-here"
+```
+
+**Bash / Linux / Cloud Deployment (Render / Railway / Fly.io):**
+```bash
+export MANAGER_API_KEY="your-secure-manager-key-here"
+```
+
+> **Security Note**: Never commit secrets to version control. In cloud hosting, configure `MANAGER_API_KEY` via the hosting provider's Environment Variables dashboard. Never expose `MANAGER_API_KEY` in frontend client code or public API payloads.
+
+### 3. Start the FastAPI Server on Port 8000
 From the repository root:
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 3. Interactive Swagger Documentation
+### 4. Interactive Swagger Documentation
 Once running, open:
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 - **Health Check**: http://localhost:8000/health
 
-### 4. Run Automated Tests
+### 5. Run Automated Tests
 ```powershell
 .\.venv\Scripts\python.exe -m pytest backend/tests -v
 ```
@@ -69,11 +87,16 @@ Once running, open:
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/health` | Health status, station/pump counts, and prototype disclaimer |
-| `GET` | `/stations` | Returns Stations `A`, `B`, `C` with 3 pumps each, fuel stock, and queue telemetry |
-| `POST` | `/recommend` | Ranks eligible stations by `travel_time_min + predicted_wait_min` for a location, fuel, and vehicle type |
-| `POST` | `/predict` | Predicts queue waiting time and recommends the optimal compatible operational pump |
-| `POST` | `/simulate` | Runs a seeded discrete-event simulation (`normal` or `peak`) and updates station telemetry |
-| `POST` | `/compare` | Compares Fixed FCFS vs. Smart Allocation on identical seeded arrivals with dynamic improvement metrics |
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Health status, station/pump counts, and prototype disclaimer | None |
+| `GET` | `/stations` | Returns Stations `A`, `B`, `C` with 3 pumps each, fuel stock, and queue telemetry | None |
+| `POST` | `/recommend` | Ranks eligible stations by `travel_time_min + predicted_wait_min` for a location, fuel, and vehicle type | None |
+| `POST` | `/predict` | Predicts queue waiting time and recommends the optimal compatible operational pump | None |
+| `POST` | `/simulate` | Runs a seeded discrete-event simulation (`normal` or `peak`) and updates station telemetry | None |
+| `POST` | `/compare` | Compares Fixed FCFS vs. Smart Allocation on identical seeded arrivals with dynamic improvement metrics | None |
+| `GET` | `/simulations/history` | Retrieves recent simulation run summaries from SQLite database | None |
+| `POST` | `/queue/join` | Register a driver into the prototype virtual queue; returns queue position & ML wait forecast | None |
+| `GET` | `/queue/registrations` | Lists virtual queue registrations with optional station, status, and fuel type filters | None |
+| `GET` | `/queue/status/{lookup_key}` | Look up a driver's active ticket status & position by Registration ID or Vehicle Plate | None |
+| `PATCH` | `/queue/registrations/{id}/status` | Updates queue status (`WAITING -> SERVING -> COMPLETED` or `WAITING -> CANCELLED`) | **Manager Auth** (`X-Manager-Key` / Bearer token) |
