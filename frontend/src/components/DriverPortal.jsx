@@ -148,20 +148,36 @@ export default function DriverPortal({ stations }) {
     }
   };
 
-  // Synchronize registration form defaults with active top selection
-  useEffect(() => {
-    if (selectedFuel) setRegFuelType(selectedFuel);
-  }, [selectedFuel]);
+// Synchronize registration fuel type after the selected fuel changes
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (selectedFuel) {
+      setRegFuelType(selectedFuel);
+    }
+  }, 0);
 
-  useEffect(() => {
-    if (selectedVehicle) setRegVehicleType(selectedVehicle);
-  }, [selectedVehicle]);
+  return () => clearTimeout(timer);
+}, [selectedFuel]);
 
-  useEffect(() => {
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (selectedVehicle) {
+      setRegVehicleType(selectedVehicle);
+    }
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [selectedVehicle]);
+
+useEffect(() => {
+  const timer = setTimeout(() => {
     if (recommendation?.recommended_station?.id) {
       setRegStationId(recommendation.recommended_station.id);
     }
-  }, [recommendation?.recommended_station?.id]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [recommendation?.recommended_station?.id]);
 
   const targetRegStation = stations.find(s => s.id === regStationId) || stations[0];
   const targetFuelInStock = targetRegStation?.fuel_availability?.[regFuelType] ?? true;

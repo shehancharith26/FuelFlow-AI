@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import {
   Trophy,
-  Award,
   Sparkles,
   Compass,
   LayoutDashboard,
   ArrowRight,
   CheckCircle2,
-  Clock,
   TrendingDown,
   ShieldCheck,
   Layers,
@@ -22,12 +20,11 @@ import {
   AlertTriangle,
   Server,
   Code2,
-  ExternalLink,
   ChevronRight,
   Fuel
 } from 'lucide-react';
 
-export default function ProjectShowcase({ onNavigate, stations = [] }) {
+export default function ProjectShowcase({ onNavigate }) {
   const [activeStoryTab, setActiveStoryTab] = useState('challenge'); // 'challenge' | 'solution' | 'impact'
 
   return (

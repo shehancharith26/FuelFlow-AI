@@ -1,8 +1,22 @@
-# FuelFlow AI
+# ⛽ FuelFlow AI
 
-### Intelligent Fuel Station Discovery, Queue Prediction & Smart Pump Allocation System
-**BuildX 0.1 Hackathon — Challenge 10: Intelligent Queue Prediction and Service Allocation**
+### Intelligent Fuel Station Discovery, Virtual Queue Management, AI Queue Prediction & Smart Pump Allocation
 
+**🥉 3rd Place Winner — BuildX 0.1 Hackathon**
+
+**Hackathon Challenge:** Challenge 10 — Intelligent Queue Prediction and Service Allocation
+
+**Current Version:** FuelFlow AI v1.1 — Portfolio Edition
+
+**Technology Stack:** React 19 | Vite 8 | Python | FastAPI | Scikit-learn | SQLite
+
+**Core Features:** Intelligent Station Recommendations • Virtual Queue Registration • AI-Powered Waiting Time Prediction • Smart Pump Allocation • Interactive Manager Dashboard • Strategy Simulation
+
+**Machine Learning:** Random Forest Regression trained and evaluated using synthetic simulation data.
+
+**Project Type:** Full-Stack AI-Powered Prototype
+
+---
 > **PROTOTYPE — SIMULATED DATA DISCLAIMER**  
 > All fuel stations, geographic locations, driving distances, fuel availability states, vehicle queues, and ML waiting-time predictions in this project are synthetic and simulated for the fictional Kegalle transport corridor scenario. This project is a demonstration prototype and does not represent live GPS telemetry or certified physical refinery inventories.
 
@@ -25,7 +39,7 @@ Fuel distribution in developing urban and inter-city corridors frequently experi
 2. **Machine Learning Queue Prediction**: Utilizes a trained `RandomForestRegressor` pipeline ($R^2 = 0.988$) to accurately forecast wait times based on arrival workload, queue length, and active compatible pumps.
 3. **Smart Pump Allocation (Manager Portal)**: Dynamically directs arriving vehicles to compatible dispensers, protecting multi-fuel diesel pumps from petrol congestion and leveling dispenser utilization.
 4. **Strategy Simulation & Comparison**: Runs paired discrete-event simulations comparing traditional Fixed FCFS against FuelFlow Smart Allocation on identical arrival streams, demonstrating quantifiable wait-time reductions and throughput gains.
-
+5. **Virtual Queue Registration & Management**: Enables drivers to register their vehicles, select a preferred fuel station, specify their fuel requirements, and join a simulated virtual queue. The system provides queue position and estimated waiting-time information, while allowing station managers to monitor and manage registered vehicles through the Manager Portal.
 ---
 
 ## 3. System Configuration & Prototype Scenario
@@ -48,7 +62,15 @@ The system models the **Kegalle transport corridor** with realistic constraints:
 - **Total Simulated Vehicles**: 200 vehicles (configurable `50` to `2,000` in simulation runs).
 - **Vehicle Categories**: Car / Sedan / SUV, Motorcycle / Scooter, Three Wheeler / TukTuk, Van / Light Commercial, Lorry / Heavy Transport.
 - **Fuel Types**: `petrol_92`, `petrol_95`, `diesel`.
+### Virtual Queue Configuration (Portfolio Edition)
 
+- **Queue Type:** Simulated virtual fuel-station queue.
+- **Driver Registration:** Drivers can enter their vehicle registration number, select their vehicle category, and specify their required fuel type and quantity.
+- **Station Selection:** Drivers can select a preferred station from the available fictional fuel stations.
+- **Queue Joining:** Registered drivers can join the selected station's virtual queue.
+- **Queue Information:** Displays queue position and estimated waiting time based on the prototype's queue-management logic.
+- **Manager Visibility:** Station managers can monitor registered vehicles and their virtual queue status through the Manager Portal.
+- **Prototype Boundary:** Virtual queue registrations are part of the demonstration system and do not reserve fuel or guarantee a physical position at a real fuel station.
 ---
 
 ## 4. Portals & Features
@@ -60,7 +82,10 @@ The system models the **Kegalle transport corridor** with realistic constraints:
 - **Nearby Station Telemetry Cards**: Displays real-time queue length, travel duration, predicted wait, total journey bar, and stock chips for Stations A, B, and C.
 - **Side-by-Side Comparison Matrix**: Clear tabular breakdown evaluating distance, queue depth, turnaround time, and eligibility.
 - **Interactive ML Queue Predictor Drawer**: Test custom inputs against the trained `RandomForestRegressor` (`POST /predict`).
-
+- **Vehicle Registration:** Drivers can enter their vehicle registration number, select their vehicle type, fuel type, and required fuel quantity.
+- **Virtual Queue Joining:** Drivers can select a preferred fuel station and join its simulated virtual queue.
+- **Queue Position Tracking:** Displays the registered vehicle's current virtual queue position and estimated waiting time.
+- **Registration Confirmation:** Provides confirmation after successfully joining the virtual queue.
 ### Manager Portal
 - **Station Switcher**: Inspect telemetry for Station A, Station B, or Station C.
 - **KPI Metrics Bar**: Live simulated vehicles, active pump count, average waiting time, peak wait time, and vehicles served.
@@ -68,7 +93,10 @@ The system models the **Kegalle transport corridor** with realistic constraints:
 - **Simulation Controls**: Adjust vehicle count (`50..500`, default `200`), toggle traffic scenarios (`Normal` 1.0x vs. `Peak` 1.45x), adjust random seed, and trigger `Start Simulation` or `Reset`.
 - **Strategy Comparison (Fixed FCFS vs. Smart Allocation)**: Side-by-side KPI cards showing wait reduction percentage and throughput gain, paired with **Recharts** interactive visualizations (AreaChart timeline and BarChart station breakdown).
 - **Live Smart Allocation Stream**: Real-time audit log detailing assigned dispensers and the AI optimization rationale (e.g., reserving Pump 3 for imminent diesel trucks).
-
+- **Registered Vehicle Monitoring:** Station managers can view vehicles registered in their station's simulated virtual queue.
+- **Virtual Queue Dashboard:** Displays vehicle registration numbers, vehicle types, requested fuel types, fuel quantities, and queue positions.
+- **Queue Status Management:** Allows managers to monitor and update registered vehicles' virtual queue statuses.
+- **Driver–Manager Integration:** Virtual queue registrations submitted through the Driver Portal are reflected in the corresponding station's Manager Portal.
 ---
 
 ## 5. System Architecture
@@ -149,7 +177,10 @@ When executing paired simulations on identical seeded arrivals (Seed 42, 200 veh
 | `POST` | `/simulate` | Executes seeded discrete-event simulation and records summary to SQLite |
 | `POST` | `/compare` | Executes paired FCFS vs. Smart Allocation comparison and logs to SQLite |
 | `GET` | `/simulations/history` | Retrieves recent simulation and comparison execution summaries from SQLite |
-
+| `POST` | `/queue/join` | Register a driver and join a simulated virtual fuel-station queue |
+| `GET` | `/queue/registrations` | Retrieve virtual queue registrations with optional filters |
+| `PATCH` | `/queue/registrations/{registration_id}/status` | Update vehicle queue status (manager authentication required) |
+| `GET` | `/queue/status/{lookup_key}` | Retrieve queue status using registration ID or vehicle number |
 ---
 
 ## 9. Installation & Execution Guide

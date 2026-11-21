@@ -14,11 +14,9 @@ import {
   CheckCircle2,
   RefreshCw,
   Ticket,
-  Filter,
   Search,
   Copy,
   Check,
-  Fuel,
   Info,
   ShieldCheck,
   Inbox
@@ -182,9 +180,13 @@ export default function ManagerPortal({ stations, onUpdateStations }) {
     }
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
+  const timer = setTimeout(() => {
     fetchQueueRegistrations();
-  }, [fetchQueueRegistrations]);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, [fetchQueueRegistrations]);
 
   const handleCopyRegId = (regId) => {
     navigator.clipboard?.writeText(regId);
