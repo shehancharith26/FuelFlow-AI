@@ -188,23 +188,27 @@ When executing paired simulations on identical seeded arrivals (Seed 42, 200 veh
 ### Prerequisites
 - Node.js (v18+) & npm
 - Python (v3.10+)
-
 ### 1. Backend Setup & Startup
+
 From the repository root:
 
 ```powershell
-# 1. Activate or create virtual environment
+# 1. Create a virtual environment (first-time setup only)
+python -m venv .venv
+
+# 2. Activate the virtual environment
 .\.venv\Scripts\Activate.ps1
 
-# 2. Install dependencies
-pip install -r backend/requirements.txt
+# 3. Install backend dependencies
+python -m pip install -r backend/requirements.txt
 
-# 3. (Optional) Re-train the Random Forest model
+# 4. (Optional) Re-train the Random Forest model
 python backend/train_model.py
 
-# 4. Start the FastAPI server on port 8000
+# 5. Start the FastAPI server on port 8000
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+
 
 The backend is accessible at:
 - **API Base**: `http://localhost:8000`
@@ -230,7 +234,7 @@ The frontend runs at:
 
 ### 3. Running Automated Tests
 ```powershell
-# Run backend pytest suite (19 tests)
+# Run backend pytest suite (31 tests)
 .\.venv\Scripts\python.exe -m pytest -v backend/tests/
 
 # Run frontend linter and production build
@@ -254,4 +258,4 @@ npm run build
 - **Frontend & UI/UX Architecture**: Designed modern dark SaaS dashboard, Driver Portal discovery workflows, Manager Portal simulation controls, and interactive Recharts comparison charts.
 - **Backend API & Discrete-Event Simulation Engine**: Built FastAPI endpoints, seeded discrete-event queuing simulator, queue balancing allocator, and paired strategy comparison framework.
 - **Machine Learning & Queue Prediction**: Curated synthetic simulation dataset, implemented target leakage safeguards, trained and tuned `RandomForestRegressor`, and packaged joblib pipeline.
-- **Data Persistence & Integration Testing**: Designed SQLite database layer, ensured Windows file concurrency safety, and built comprehensive 19-test automated suite.
+- **Data Persistence & Integration Testing**: Designed SQLite database layer, ensured Windows file concurrency safety, and built a comprehensive automated test suite (31 tests).
